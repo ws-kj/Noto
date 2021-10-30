@@ -6,7 +6,7 @@ import (
 )
 
 var (
-    gui *gocui.Gui
+    tui *gocui.Gui
     shell  *gocui.View
     oldX   int
     oldY   int
@@ -18,13 +18,13 @@ func InitGui() {
         log.Fatal(err)
     }
     defer g.Close()
-    gui = g
-    gui.SetManagerFunc(shell_manager)
+    tui = g
+    tui.SetManagerFunc(shell_manager)
     if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
         log.Fatal(err)
     }
 
-    if err := gui.MainLoop(); err != nil && err != gocui.ErrQuit {
+    if err := tui.MainLoop(); err != nil && err != gocui.ErrQuit {
         log.Fatal(err)
     }
 }
@@ -66,7 +66,7 @@ func shell_manager(g *gocui.Gui) error {
         shell.Editor = gocui.EditorFunc(shell_editor)
         shell.Autoscroll = false
         shell.Wrap = true
-        gui.Cursor = true
+        tui.Cursor = true
         shell.Editable = true
     }
     if oldX != maxX {
