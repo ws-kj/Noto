@@ -2,40 +2,34 @@ package main
 
 import (
     "log"
-//    "strconv"
     "github.com/jroimartin/gocui"
 )
 
-type Tui struct {
-    Win    *gocui.Gui
-    Disp   *gocui.View    
-    Shell  *gocui.View
-    Dbuf   string
-    Sbuf   string
-    Vert   bool
+var (
+    gui *gocui.Gui
+    shell  *gocui.View
     oldX   int
     oldY   int
-}
+)
 
-func (tui *Tui) init() {
+func InitGui() {
     g, err := gocui.NewGui(gocui.OutputNormal)
     if err != nil {
         log.Fatal(err)
     }
     defer g.Close()
-    tui.Win = g
-    tui.Win.SetManagerFunc(tui.shell_manager)
-    if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, tui.quit); err != nil {
+    gui = g
+    gui.SetManagerFunc(shell_manager)
+    if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
         log.Fatal(err)
     }
 
-    if err := tui.Win.MainLoop(); err != nil && err != gocui.ErrQuit {
+    if err := gui.MainLoop(); err != nil && err != gocui.ErrQuit {
         log.Fatal(err)
     }
-
 }
 
-func editor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
+func shell_editor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
     switch {
         case ch != 0 && mod == 0:
             v.EditWrite(ch)
@@ -56,7 +50,7 @@ func set_text(v *gocui.View, text string) {
     v.SetCursor(len(text), 0)
 }
 
-func (tui *Tui) shell_manager(g *gocui.Gui) error {
+func shell_manager(g *gocui.Gui) error {
     maxX, maxY := g.Size()
     sMinX := 0
     sMinY := 0
@@ -64,40 +58,38 @@ func (tui *Tui) shell_manager(g *gocui.Gui) error {
     sMaxX := maxX-1
 
     var err error
-    if tui.Shell, err = g.SetView("shell", sMinX, sMinY, sMaxX, sMaxY); err != nil {
+    if shell, err = g.SetView("shell", sMinX, sMinY, sMaxX, sMaxY); err != nil {
         if err != gocui.ErrUnknownView {
             return err
         } 
         g.SetCurrentView("shell")
-        tui.Shell.Editor = gocui.EditorFunc(editor)
-        tui.Shell.Autoscroll = false
-        tui.Shell.Wrap = true
-        tui.Win.Cursor = true
-        tui.Shell.Editable = true
+        shell.Editor = gocui.EditorFunc(shell_editor)
+        shell.Autoscroll = false
+        shell.Wrap = true
+        gui.Cursor = true
+        shell.Editable = true
     }
-    if tui.oldX != maxX {
-        ox, oy := tui.Shell.Cursor()
-        l := (oy * tui.oldX) + ox
+    if oldX != maxX {
+        ox, oy := shell.Cursor()
+        l := (oy * oldX) + ox
         nx := l % maxX
-        if tui.oldX < maxX { nx -= 2 }  //why??
-        if tui.oldX > maxX { nx += 2 }  //why does this work? i do not know
-        tui.Shell.SetCursor(nx, ((l - (l % maxX)) / maxX)) 
+        if oldX < maxX { nx -= 2 }  //why??
+        if oldX > maxX { nx += 2 }  //why does this work? i do not know
+        shell.SetCursor(nx, ((l - (l % maxX)) / maxX)) 
     }
-    tui.oldX = maxX
-    tui.oldY = maxY
+    oldX = maxX
+    oldY = maxY
     return nil
 }
 
-func (tui *Tui) pshell(t string) {
-    set_text(tui.Shell, t)
+func pshell(t string) {
+    set_text(shell, t)
 }
 
-
-func (tui *Tui) quit(_ *gocui.Gui, _ *gocui.View) error {
+func quit(_ *gocui.Gui, _ *gocui.View) error {
     return gocui.ErrQuit
 }
 
 func main() {
-    tui := Tui{}
-    tui.init()
+    InitGui()
 }
