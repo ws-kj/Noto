@@ -1,13 +1,11 @@
 package main
 
 import (
-    "fmt"
     "os"
     "path/filepath"
     "log"
     "strconv"
     "strings"
-    "bufio"
 )
 
 type Color string
@@ -22,61 +20,63 @@ const (
     White  Color = "\033[37m"
 )
 
-type Shell struct {
-    CurP     *Project
-    CurS     *Source
-    CurN     *Note
-    Prompt   string
-}
-
+var (
+    cur_proj     *Project
+    cur_src     *Source
+    cur_note     *Note
+    pstr   string
+)
+/*
 func Cprintln(c Color, s string) {
-    fmt.Println(string(c), s, string(Reset))
+    Shprintln(string(c), s, string(Reset))
 }
-
+*/
 func errlog(s string) {
-    Cprintln(Red, "\n\t"+s+"\n")
+//    Cprintln(Red, "\n\t"+s+"\n")
+    Shprintln("\n\n\t" + s)
 }
 
-func (shell *Shell) build() string {
-    if shell.CurP == nil {
-        return "Noto ?> ";
+func build_prompt() string {
+    if cur_proj == nil {
+        return "Noto ?>";
     }
-    r := shell.CurP.Title;
-    if shell.CurS == nil {
-        return r + " ?> ";
+    r := cur_proj.Title;
+    if cur_src == nil {
+        return r + " ?>";
     }
     r += " | "
-    if shell.CurS.Title == "" {
+    if cur_src.Title == "" {
         r += "Source "
-        r += strconv.Itoa(shell.CurS.Id)
+        r += strconv.Itoa(cur_src.Id)
     } else {
-        r += shell.CurS.Title
+        r += cur_src.Title
     }
-    if shell.CurN == nil {
-        r += " ?> "
+    if cur_note == nil {
+        r += " ?>"
         return r
     }
     r += " | "
-    if shell.CurN.Title == "" {
+    if cur_note.Title == "" {
         r += "Note "
-        r += strconv.Itoa(shell.CurN.Id)
+        r += strconv.Itoa(cur_note.Id)
     } else {
-        r += shell.CurN.Title
+        r += cur_note.Title
     }
-    r += " ?> "
+    r += " ?>"
     return r
 }
 
-func (shell *Shell) prompt() {
-    p := shell.build()
+/*
+func prompt() {
+    p := build()
     fmt.Print(p)
     reader := bufio.NewReader(os.Stdin)
     in, _ := reader.ReadString('\n')
-    shell.process(in)
-    shell.prompt()
+    process(in)
+    prompt()
 }
-
-func (shell *Shell) process(input string) {
+*/
+func process_command(input string) {
     args := strings.Fields(input)
 
     if len(args) == 0 {
@@ -85,38 +85,38 @@ func (shell *Shell) process(input string) {
 
     switch args[0] {
         case "list", "l":
-            shell.c_list(args)
+            c_list(args)
         case "new", "n":
-            shell.c_new(args)
+            c_new(args)
         case "use", "u":
-            shell.c_use(args)
+            c_use(args)
         case "edit", "e":
-            shell.c_edit(args)
+            c_edit(args)
         case "cite", "c":
-            shell.c_cite(args)
+            c_cite(args)
         case "info", "i":
-            shell.c_info(args)
+            c_info(args)
         case "back", "b", "..":
-            shell.c_back(args)
+            c_back(args)
         default:
             errlog("Command not recognized")
     }
 }
 
-func (shell *Shell) c_list(args []string) {
+func c_list(args []string) {
     if len(args) > 1 {
         switch args[1] {
             case "projects","project","p":
-                shell.listp(args)
+                listp(args)
             case "sources","source","s":
-                if shell.CurP != nil {
-                    shell.lists(args)
+                if cur_proj != nil {
+                    lists(args)
                 } else {
                     errlog("Use a project first")
                 }
             case "notes","note","n":
-                if shell.CurS != nil {
-                    shell.listn(args)
+                if cur_src != nil {
+                    listn(args)
                 } else {
                     errlog("Use a source first")
                 }
@@ -124,18 +124,18 @@ func (shell *Shell) c_list(args []string) {
                 errlog("Command not recognized")
         }
     } else {
-        if shell.CurP == nil {
-            shell.listp(args)
-        } else if shell.CurS == nil {
-            shell.lists(args)
+        if cur_proj == nil {
+            listp(args)
+        } else if cur_src == nil {
+            lists(args)
         } else {
-            shell.listn(args)
+            listn(args)
         }
     }
 }
 
 //DRY!!
-func (shell *Shell) listp(args []string) {
+func listp(args []string) {
     f, err := os.Open(filepath.Join(home(), ".noto"))
     if err != nil {
         log.Fatal(err)
@@ -144,14 +144,19 @@ func (shell *Shell) listp(args []string) {
     if err != nil {
         log.Fatal(err)
     }
+    if len(files) == 0 {
+        errlog("No projects yet! Use `new project ___` to create one.")
+    } else {
+        Shprintln("\n")
+    }
     for _, proj := range files {
         if proj.IsDir() {
-            fmt.Println(proj.Name())
+            Shprintln("\t" + proj.Name())
         }
     }
 }
-func (shell *Shell) lists(args []string) {
-    f, err := os.Open(filepath.Join(home(), ".noto", shell.CurP.Title))
+func lists(args []string) {
+    f, err := os.Open(filepath.Join(home(), ".noto", cur_proj.Title))
     if err != nil {
         log.Fatal(err)
     }
@@ -184,27 +189,24 @@ func (shell *Shell) lists(args []string) {
         }
     }
     if len(entries) > 0 {
-        fmt.Println()
+        Shprintln("\n")
     }
     for _, n := range entries {
         entry := "\tSource "
         entry += strconv.Itoa(n)
         entry += " - "
-        src := shell.CurP.load_source(n)
+        src := cur_proj.load_source(n)
         if src.Title != "" {
             entry += src.Title
         } else {
             entry += "No Title"
         }
-        fmt.Println(entry)
-    }
-    if len(entries) > 0 {
-        fmt.Println()
+        Shprintln(entry)
     }
 }
 
-func (shell *Shell) listn(args []string) {
-    f, err := os.Open(filepath.Join(home(), ".noto", shell.CurP.Title, strconv.Itoa(shell.CurS.Id)))
+func listn(args []string) {
+    f, err := os.Open(filepath.Join(home(), ".noto", cur_proj.Title, strconv.Itoa(cur_src.Id)))
     if err != nil {
         log.Fatal(err)
     }
@@ -215,6 +217,8 @@ func (shell *Shell) listn(args []string) {
     if len(files) < 2 {
         errlog("No notes yet! Use `new note` to create one.")
         return
+    } else {
+        Shprintln("\n")
     }
 
     var entries = make([]int,len(files)-1)
@@ -236,27 +240,21 @@ func (shell *Shell) listn(args []string) {
         }
     }
 
-    if len(entries) > 0 {
-        fmt.Println()
-    }
     for _, n := range entries {
         entry := "\tNote "
         entry += strconv.Itoa(n)
         entry += " - "
-        note := shell.CurS.load_note(n)
+        note := cur_src.load_note(n)
         if note.Title != "" {
             entry += note.Title
         } else {
             entry += "No Title"
         }
-        fmt.Println(entry)
-    }
-    if len(entries) > 0 {
-        fmt.Println()
+        Shprintln("\t" + entry)
     }
 }
 
-func (shell *Shell) c_new(args []string) {
+func c_new(args []string) {
     if len(args) < 2 {
         errlog("Specify what to create")
         return
@@ -275,30 +273,30 @@ func (shell *Shell) c_new(args []string) {
             name = strings.TrimSpace(name)
             p := create_project(name)
             if p != nil {
-                shell.CurP = p
-                shell.CurS = nil
-                shell.CurN = nil
+                cur_proj = p
+                cur_src = nil
+                cur_note = nil
             }
         case "source","s":
-            if shell.CurP == nil {
+            if cur_proj == nil {
                 errlog("Use a project first")
                 return
             }
-            s := shell.CurP.create_source()
-            shell.CurS = s
+            s := cur_proj.create_source()
+            cur_src = s
         case "note","n":
-            if shell.CurS == nil {
+            if cur_src == nil {
                 errlog("Use a source first")
                 return
             }
-            n := shell.CurS.create_note()
-            shell.CurN = n
+            n := cur_src.create_note()
+            cur_note = n
         default:
             errlog("Command not recognized")
     }
 }
 
-func (shell *Shell) c_use(args []string) {
+func c_use(args []string) {
     if len(args) > 1 {
         switch args[1] {
             case "project", "p":
@@ -314,12 +312,12 @@ func (shell *Shell) c_use(args []string) {
                 name = strings.TrimSpace(name)
                 p := load_project(name)
                 if p != nil {
-                    shell.CurP = p
-                    shell.CurS = nil
-                    shell.CurN = nil
+                    cur_proj = p
+                    cur_src = nil
+                    cur_note = nil
                 }
             case "source", "s":
-                if shell.CurP == nil {
+                if cur_proj == nil {
                     errlog("Use a project first")
                     return
                 }
@@ -332,13 +330,13 @@ func (shell *Shell) c_use(args []string) {
                     errlog("Please specify source id")
                     return
                 }
-                s := shell.CurP.load_source(id)
+                s := cur_proj.load_source(id)
                 if s != nil {
-                    shell.CurS = s
-                    shell.CurN = nil
+                    cur_src = s
+                    cur_note = nil
                 }
             case "note","n":
-                if shell.CurS == nil {
+                if cur_src == nil {
                     errlog("Use a source first")
                     return
                 }
@@ -351,9 +349,9 @@ func (shell *Shell) c_use(args []string) {
                     errlog("Please specify note id")
                     return
                 }
-                n := shell.CurS.load_note(id)
+                n := cur_src.load_note(id)
                 if n != nil {
-                    shell.CurN = n
+                    cur_note = n
                 }
             default:
                 errlog("Command not recognized")
@@ -364,8 +362,8 @@ func (shell *Shell) c_use(args []string) {
 
 }
 
-func (shell *Shell) c_edit(args []string) {
-    if shell.CurP == nil {
+func c_edit(args []string) {
+    if cur_proj == nil {
         errlog("Use a project first")
         return
     }
@@ -373,44 +371,44 @@ func (shell *Shell) c_edit(args []string) {
     if len(args) > 1 {
         switch args[1] {
             case "source","s":
-                shell.edits(args)
+                edits(args)
             case "note","n":
-                shell.editn(args)
+                editn(args)
             default:
                 errlog("Command not recognized")
         }
     } else {
-        if shell.CurN == nil {
-            shell.edits(args)
+        if cur_note == nil {
+            edits(args)
         } else {
-            shell.editn(args)
+            editn(args)
         }
     } 
     
 }
 
-func (shell *Shell) edits(args []string) {
+func edits(args []string) {
 
 }
-func (shell *Shell) editn(args []string) {
-
-}
-
-func (shell *Shell) c_cite(args []string) {
+func editn(args []string) {
 
 }
 
-func (shell *Shell) c_back(args []string) {
-    if shell.CurN != nil {
-        shell.CurN = nil
-    } else if shell.CurS != nil {
-        shell.CurS = nil
+func c_cite(args []string) {
+
+}
+
+func c_back(args []string) {
+    if cur_note != nil {
+        cur_note = nil
+    } else if cur_src != nil {
+        cur_src = nil
     } else {
-        shell.CurP = nil
+        cur_proj = nil
     }
 }
 
-func (shell *Shell) c_info(args []string) {
+func c_info(args []string) {
     if len(args) > 1 {
         switch args[1] {
             case "project", "p":
@@ -429,7 +427,7 @@ func (shell *Shell) c_info(args []string) {
                     p.describe()
                 }
             case "source", "s":
-                if shell.CurP == nil {
+                if cur_proj == nil {
                     errlog("Use a project first")
                     return
                 }
@@ -442,12 +440,12 @@ func (shell *Shell) c_info(args []string) {
                     errlog("Please specify source id")
                     return
                 }
-                s := shell.CurP.load_source(id)
+                s := cur_proj.load_source(id)
                 if s != nil {
                     s.describe()
                 }
             case "note","n":
-                if shell.CurS == nil {
+                if cur_src == nil {
                     errlog("Use a source first")
                     return
                 }
@@ -460,7 +458,7 @@ func (shell *Shell) c_info(args []string) {
                     errlog("Please specify note id")
                     return
                 }
-                n := shell.CurS.load_note(id)
+                n := cur_src.load_note(id)
                 if n != nil {
                     n.describe()
                 }
@@ -468,14 +466,14 @@ func (shell *Shell) c_info(args []string) {
                 errlog("Command not recognized")
         }
     } else {
-        if shell.CurP == nil {
+        if cur_proj == nil {
             errlog("Select project to describe")
-        } else if shell.CurS == nil {
-            shell.CurP.describe()
-        } else if shell.CurN == nil {
-            shell.CurS.describe()
+        } else if cur_src == nil {
+            cur_proj.describe()
+        } else if cur_note == nil {
+            cur_src.describe()
         } else {
-            shell.CurN.describe()
+            cur_note.describe()
         }
     }
 }

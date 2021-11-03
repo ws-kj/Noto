@@ -1,7 +1,10 @@
 package main
+/*
+func main() {
+    prompt()
+
+}*/
 
 func main() {
-    shell := Shell{}
-    shell.prompt()
-
+    InitTui()
 }

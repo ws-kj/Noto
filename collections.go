@@ -117,7 +117,7 @@ func create_project(title string) *Project {
 
 func load_project(title string) *Project {
     path := filepath.Join(home(), ".noto", title)
-//    fmt.Println("Attempting to load " + path)
+//    Shprintln("Attempting to load " + path)
     _, err := os.Stat(path); if os.IsNotExist(err) {
         errlog("Project does not exist")
         return nil
