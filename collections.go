@@ -1,7 +1,6 @@
 package main
 
 import (
-    "fmt"
     "time"
     "os"
     "path/filepath"
@@ -181,12 +180,10 @@ func (project *Project) create_source() *Source {
 }
 
 func (project *Project) describe() {
-    r := "\n"
-    r += "\t" + project.Title + "\n\n"
-    r += "\tCreated:  " + project.Created.String() + "\n"
-    r += "\tModified: " + project.Modified.String() + "\n"
-    r += "\tSources:  " + strconv.Itoa(project.Sourcec) + "\n\n"
-    fmt.Print(r)
+    Shprintln("\n\n\t" + project.Title + "\n")
+    Shprintln("\tCreated:  " + project.Created.String())
+    Shprintln("\tModified: " + project.Modified.String())
+    Shprintln("\tSources:  " + strconv.Itoa(project.Sourcec))
 }
 
 func (project *Project) load_source(id int) *Source {
@@ -293,19 +290,18 @@ func (source *Source) describe() {
         url += "... (`url` for full url)"
     }
 
-    r := "\n"
-    r += "\tSource " + strconv.Itoa(source.Id) + " - " + t + "\n\n"
-    r += "\tAdded:    " + source.Created.String() + "\n"
-    r += "\tModified: " + source.Modified.String() + "\n"
-    r += "\tNotes:    " + strconv.Itoa(source.Notec) + "\n\n"
+    Shprintln("\n\n\tSource " + strconv.Itoa(source.Id) + " - " + t + "\n")
+    Shprintln("\tAdded:    " + source.Created.String())
+    Shprintln("\tModified: " + source.Modified.String())
+    Shprintln("\tNotes:    " + strconv.Itoa(source.Notec) + "\n")
 
-    r += "\tType:      " + string(source.Stype) + "\n"
-    r += "\tAuthor:    " + source.Author.mla() + "\n"
-    r += "\tPublisher: " + source.Publisher + "\n"
-    r += "\tURL:       " + url + "\n"
-    r += "\tCreated: " + source.Cdate + "\n"
-    r += "\tAccessed: " + source.Adate + "\n\n"
-    fmt.Print(r)
+    Shprintln("\tType:      " + string(source.Stype))
+    Shprintln("\tAuthor:    " + source.Author.mla())
+    Shprintln("\tPublisher: " + source.Publisher)
+    Shprintln("\tURL:       " + url)
+    Shprintln("\tCreated: " + source.Cdate)
+    Shprintln("\tAccessed: " + source.Adate)
+    
 }
 
 func (note *Note) update() {
@@ -332,11 +328,9 @@ func (note *Note) describe() {
 
     s := strconv.Itoa(len(note.Content)) + "B"
 
-    r := "\n"
-    r += "\tNote " + strconv.Itoa(note.Id) + " - " + t + "\n\n"
-    r += "\tAdded:    " + note.Created.String() + "\n"
-    r += "\tModified: " + note.Modified.String() + "\n"
-    r += "\tSize:     " + s + "\n\n"
-    fmt.Print(r)
+    Shprintln("\n\tNote " + strconv.Itoa(note.Id) + " - " + t + "\n")
+    Shprintln("\tAdded:    " + note.Created.String())
+    Shprintln("\tModified: " + note.Modified.String())
+    Shprintln("\tSize:     " + s)
 }
 
